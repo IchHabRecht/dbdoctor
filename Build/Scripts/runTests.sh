@@ -232,9 +232,10 @@ Options:
             - 8.4: use PHP 8.4
             - 8.5: use PHP 8.5
 
-    -t <13|14>
+    -t <12|13|14>
         Only with -s composerUpdate
         Specifies the TYPO3 core major version to be used
+            - 12: use TYPO3 core v12
             - 13 (default): use TYPO3 core v13
             - 14: Use TYPO3 core v14
 
@@ -328,7 +329,7 @@ while getopts ":s:a:b:d:i:p:t:e:xnhuv" OPT; do
             ;;
         t)
             TYPO3_VERSION=${OPTARG}
-            if ! [[ ${TYPO3_VERSION} =~ ^(13|14)$ ]]; then
+            if ! [[ ${TYPO3_VERSION} =~ ^(12|13|14)$ ]]; then
                 INVALID_OPTIONS+=("t ${OPTARG}")
             fi
             ;;
@@ -478,6 +479,14 @@ case ${TEST_SUITE} in
         ;;
     composerUpdate)
         cp composer.json composer.json.orig
+        if [ ${TYPO3_VERSION} -eq 12 ]; then
+            COMMAND=(composer req --dev --no-update --no-interaction typo3/cms-composer-installers:^5.0 typo3/cms-workspaces:^12.4 typo3/cms-impexp:^12.4 typo3/cms-redirects:^12.4 "$@")
+            ${CONTAINER_BIN} run ${CONTAINER_COMMON_PARAMS} --name composer-update-${SUFFIX} -e COMPOSER_CACHE_DIR=.cache/composer -e COMPOSER_ROOT_VERSION=${COMPOSER_ROOT_VERSION} ${IMAGE_PHP} "${COMMAND[@]}"
+            COMMAND=(composer rm --no-update --no-interaction --dev typo3/cms-install "$@")
+            ${CONTAINER_BIN} run ${CONTAINER_COMMON_PARAMS} --name composer-update-${SUFFIX} -e COMPOSER_CACHE_DIR=.cache/composer -e COMPOSER_ROOT_VERSION=${COMPOSER_ROOT_VERSION} ${IMAGE_PHP} "${COMMAND[@]}"
+            COMMAND=(composer req --no-update --no-interaction typo3/cms-core:^12.4 typo3/cms-install:^12.4 "$@")
+            ${CONTAINER_BIN} run ${CONTAINER_COMMON_PARAMS} --name composer-update-${SUFFIX} -e COMPOSER_CACHE_DIR=.cache/composer -e COMPOSER_ROOT_VERSION=${COMPOSER_ROOT_VERSION} ${IMAGE_PHP} "${COMMAND[@]}"
+        fi
         if [ ${TYPO3_VERSION} -eq 13 ]; then
             COMMAND=(composer req --dev --no-update --no-interaction typo3/cms-composer-installers:^5.0 typo3/cms-workspaces:^13.4 typo3/cms-impexp:^13.4 typo3/cms-redirects:^13.4 "$@")
             ${CONTAINER_BIN} run ${CONTAINER_COMMON_PARAMS} --name composer-update-${SUFFIX} -e COMPOSER_CACHE_DIR=.cache/composer -e COMPOSER_ROOT_VERSION=${COMPOSER_ROOT_VERSION} ${IMAGE_PHP} "${COMMAND[@]}"
